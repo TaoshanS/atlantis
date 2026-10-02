@@ -36,7 +36,8 @@ class Renderer:
 
     def bitmap(self, bid):
         if bid not in self.cache:
-            self.cache[bid] = Image.open(self.root / "images" / self.key / ("%d.png" % bid)).convert("RGBA")
+            p = self.root / "images" / self.key / ("%d.webp" % bid)
+            self.cache[bid] = Image.open(p if p.exists() else p.with_suffix(".png")).convert("RGBA")
         return self.cache[bid]
 
     def draw_shape(self, canvas, sid, world):
@@ -51,7 +52,7 @@ class Renderer:
         ImageDraw.Draw(mask).polygon(corners, fill=255)
         for f in shp["fills"]:
             if f["t"] == "bitmap":
-                if f["id"] == 0xFFFF or not (self.root / "images" / self.key / ("%d.png" % f["id"])).exists():
+                if f["id"] == 0xFFFF or not any((self.root / "images" / self.key / ("%d.%s" % (f["id"], e))).exists() for e in ("webp", "png")):
                     continue  # 0xFFFF is the SWF "no bitmap" placeholder
                 fm = f["m"]
                 m = mul(world, [fm[0] / 20, fm[1] / 20, fm[2] / 20, fm[3] / 20, fm[4], fm[5]])

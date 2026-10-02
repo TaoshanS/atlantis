@@ -65,7 +65,7 @@ game/
 The assets are extracted from `game/` automatically during the build:
 
 ```sh
-pip install -r requirements.txt          # Pillow, NumPy, fontTools (plus FFmpeg for the audio)
+pip install -r requirements.txt          # Pillow, NumPy, fontTools
 cmake --preset macos                     # or: linux, windows, ios
 cmake --build --preset macos
 ```

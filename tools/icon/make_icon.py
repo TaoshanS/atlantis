@@ -37,13 +37,21 @@ def superellipse_mask(size, body, n=5.0, ss=4):
     return m.resize((size, size), Image.LANCZOS)
 
 
+def bitmap(ex, key, cid):
+    for ext in ("webp", "png"):  # lossless WebP since the extractor recompresses the bitmaps; PNG from older extractions
+        p = ex / "images" / key / ("%d.%s" % (cid, ext))
+        if p.exists():
+            return Image.open(p).convert("RGBA")
+    sys.exit("bitmap %s/%d not found" % (key, cid))
+
+
 def artwork(ex, side):
-    bg = Image.open(ex / "images" / BACKDROP[0] / ("%d.png" % BACKDROP[1])).convert("RGBA")
+    bg = bitmap(ex, *BACKDROP)
     # square crop around the upper middle of the backdrop (light rays), scaled to cover
     s = bg.height
     bg = bg.crop(((bg.width - s) // 2, 0, (bg.width + s) // 2, s)).resize((side, side), Image.LANCZOS)
     bg = bg.filter(ImageFilter.GaussianBlur(side / 160))  # soften the upscale; it is only a backdrop
-    hero = Image.open(ex / "images" / HERO[0] / ("%d.png" % HERO[1])).convert("RGBA")
+    hero = bitmap(ex, *HERO)
     k = side * 0.86 / hero.height
     hero = hero.resize((round(hero.width * k), round(hero.height * k)), Image.LANCZOS)
     shadow = Image.new("RGBA", hero.size, (0, 0, 0, 0))

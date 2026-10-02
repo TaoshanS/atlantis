@@ -1,6 +1,3 @@
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
-#define STBI_ONLY_JPEG
-#include "stb_image.h"
+// stb_truetype (stb_image lives in sbso_core: src/core/stb_image_impl.cpp).
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"

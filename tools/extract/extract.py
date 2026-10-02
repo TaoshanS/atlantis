@@ -3,7 +3,7 @@
 
 Usage: extract.py <game-dir> <out-dir> [main-swf [only-key]]
 Writes out-dir/characters/<swf>.json (shapes, sprites, buttons, texts, fonts, root timeline),
-out-dir/images/<swf>/<id>.png, out-dir/sounds/<swf>/<id>.mp3 and
+out-dir/images/<swf>/<id>.png (recompressed to .webp by webp.py), out-dir/sounds/<swf>/<id>.mp3 and
 out-dir/manifest.json. Output is Nickelodeon's property: never commit it.
 Bitmap alpha is stored straight (un-premultiplied); resample premultiplied.
 """

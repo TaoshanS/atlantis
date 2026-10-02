@@ -4,14 +4,6 @@ set(SBSO_APP_NAME "Atlantis SquareOff")
 set(SBSO_BUNDLE_ID "io.github.sbso.atlantis" CACHE STRING "Bundle identifier of the macOS / iOS app")
 set(SBSO_VERSION "${PROJECT_VERSION}")
 
-function(sbso_bundle_data target dest)  # copies game.pak into the package once game_data has run
-  if(TARGET game_data)
-    add_dependencies(${target} game_data)
-    add_custom_command(TARGET ${target} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SBSO_GAME_PAK}" "${dest}/game.pak" VERBATIM)
-  endif()
-endfunction()
-
 if(APPLE AND NOT IOS)
   option(SBSO_BUILD_APP "Build the double-clickable macOS app (${SBSO_APP_NAME}.app)" ON)
   if(SBSO_BUILD_APP)
@@ -24,18 +16,24 @@ if(APPLE AND NOT IOS)
       MACOSX_BUNDLE_BUNDLE_NAME "${SBSO_APP_NAME}"
       MACOSX_BUNDLE_BUNDLE_VERSION "${SBSO_VERSION}"
       MACOSX_BUNDLE_SHORT_VERSION_STRING "${SBSO_VERSION}")
+    # Data, icon and signature are refreshed on every build (a POST_BUILD step only runs when the executable relinks, so a new
+    # game.pak would never reach the bundle). The signature goes last: it seals the resources.
     set(_res "$<TARGET_BUNDLE_CONTENT_DIR:sbso_app>/Resources")
-    sbso_bundle_data(sbso_app "${_res}")
+    set(_bundle_cmds)
     if(TARGET game_data)
+      list(APPEND _bundle_cmds COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SBSO_GAME_PAK}" "${_res}/game.pak")
       find_program(SBSO_ICONUTIL iconutil)
       if(SBSO_ICONUTIL)
-        add_custom_command(TARGET sbso_app POST_BUILD
-          COMMAND ${SBSO_ICONUTIL} -c icns "${SBSO_ICON_DIR}/AppIcon.iconset" -o "${_res}/AppIcon.icns" VERBATIM)
+        list(APPEND _bundle_cmds COMMAND ${SBSO_ICONUTIL} -c icns "${SBSO_ICON_DIR}/AppIcon.iconset" -o "${_res}/AppIcon.icns")
       endif()
     endif()
-    # ad-hoc signature: runs locally without a developer account
-    add_custom_command(TARGET sbso_app POST_BUILD
-      COMMAND codesign --force --deep --sign - "$<TARGET_BUNDLE_DIR:sbso_app>" || true VERBATIM)
+    add_custom_target(sbso_app_bundle ALL ${_bundle_cmds}
+      COMMAND codesign --force --deep --sign - "$<TARGET_BUNDLE_DIR:sbso_app>"
+      COMMENT "Bundling ${SBSO_APP_NAME}.app (game data, icon, ad-hoc signature)" VERBATIM)
+    add_dependencies(sbso_app_bundle sbso_app)
+    if(TARGET game_data)
+      add_dependencies(sbso_app_bundle game_data)
+    endif()
   endif()
 elseif(IOS)
   # sbso itself is the app bundle (see CMakeLists.txt). Xcode signs it with the team given in CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM.

@@ -1,4 +1,5 @@
 #include "soft_renderer.h"
+#include "image_io.h"
 #include "core/vfs.h"
 
 #include <algorithm>
@@ -25,17 +26,16 @@ const SoftRenderer::Bitmap* SoftRenderer::bitmap(const Library* lib, int id) {
     if (it != cache_.end()) return it->second.w ? &it->second : nullptr;
     Bitmap b;
     std::string path = lib->image_file(images_root_, id);
-    int w, h, comp;
-    std::vector<unsigned char> file;
-    unsigned char* data = vfs::read(path, &file) ? stbi_load_from_memory(file.data(), static_cast<int>(file.size()), &w, &h, &comp, 4) : nullptr;
-    if (data) {
+    int w = 0, h = 0;
+    std::vector<unsigned char> rgba;
+    if (decode_image(path, &w, &h, &rgba)) {
+        const unsigned char* data = rgba.data();
         b.w = w; b.h = h;
         b.px.resize(static_cast<size_t>(w) * h * 4);
         for (size_t i = 0; i < b.px.size(); i += 4) {
             float a = data[i + 3] / 255.0f;
             b.px[i] = data[i] / 255.0f * a; b.px[i + 1] = data[i + 1] / 255.0f * a; b.px[i + 2] = data[i + 2] / 255.0f * a; b.px[i + 3] = a;
         }
-        stbi_image_free(data);
     }
     auto& slot = cache_[key] = std::move(b);
     return slot.w ? &slot : nullptr;

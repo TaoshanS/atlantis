@@ -7,11 +7,13 @@
 #include <map>
 #include <memory>
 
+#include "stb_image.h"  // stbi_zlib_decode_buffer: compressed pack entries
+
 namespace sbso::vfs {
 
 namespace {
 
-struct Entry { std::uint64_t offset = 0, size = 0; };
+struct Entry { std::uint64_t offset = 0, size = 0, raw_size = 0; bool zlib = false; };
 struct Pack {
     std::string file, root;
     std::map<std::string, Entry> index;
@@ -66,13 +68,17 @@ bool is_pack(const std::string& path) {
     char m[8] = {};
     size_t n = std::fread(m, 1, 8, f);
     std::fclose(f);
-    return n == 8 && !std::memcmp(m, "SBSOPAK1", 8);
+    return n == 8 && (!std::memcmp(m, "SBSOPAK1", 8) || !std::memcmp(m, "SBSOPAK2", 8));
 }
 
-// Layout: "SBSOPAK1", u32 count, u64 index_offset, u64 index_size; index: count x {u16 name_len, name, u64 offset, u64 size}.
+// Layout: "SBSOPAK1" or "SBSOPAK2", u32 count, u64 index_offset, u64 index_size; index: count x {u16 name_len, name, u64 offset,
+// u64 size} and, in version 2, also {u64 raw_size, u8 flags (1 = zlib)}. Identical files share one copy (same offset).
 bool mount_pack(const std::string& file, const std::string& root) {
     std::vector<unsigned char> head;
-    if (!read_file_range(file, 0, 28, false, &head) || head.size() < 28 || std::memcmp(head.data(), "SBSOPAK1", 8)) return false;
+    if (!read_file_range(file, 0, 28, false, &head) || head.size() < 28) return false;
+    const bool v2 = !std::memcmp(head.data(), "SBSOPAK2", 8);
+    if (!v2 && std::memcmp(head.data(), "SBSOPAK1", 8)) return false;
+    const size_t extra = v2 ? 9 : 0;
     std::uint32_t count = static_cast<std::uint32_t>(rd(&head[8], 4));
     std::uint64_t index_off = rd(&head[12], 8);
     std::uint64_t index_size = rd(&head[20], 8);
@@ -86,28 +92,48 @@ bool mount_pack(const std::string& file, const std::string& root) {
         if (pos + 2 > all.size()) return false;
         size_t nl = rd(&all[pos], 2);
         pos += 2;
-        if (pos + nl + 16 > all.size()) return false;
+        if (pos + nl + 16 + extra > all.size()) return false;
         std::string name(reinterpret_cast<const char*>(&all[pos]), nl);
         pos += nl;
         Entry e;
         e.offset = rd(&all[pos], 8);
-        e.size = rd(&all[pos + 8], 8);
+        e.size = e.raw_size = rd(&all[pos + 8], 8);
         pos += 16;
+        if (v2) {
+            e.raw_size = rd(&all[pos], 8);
+            e.zlib = (all[pos + 8] & 1) != 0;
+            pos += 9;
+        }
         pk->index[name] = e;
     }
     packs().push_back(std::move(pk));
     return true;
 }
 
+namespace {
+bool read_entry(const Pack& pk, const Entry& e, std::vector<unsigned char>* out) {
+    if (!e.zlib) return read_file_range(pk.file, e.offset, e.size, false, out);
+    std::vector<unsigned char> packed;
+    if (!read_file_range(pk.file, e.offset, e.size, false, &packed)) return false;
+    out->resize(static_cast<size_t>(e.raw_size));
+    int n = stbi_zlib_decode_buffer(reinterpret_cast<char*>(out->data()), static_cast<int>(out->size()), reinterpret_cast<const char*>(packed.data()),
+                                    static_cast<int>(packed.size()));
+    return n == static_cast<int>(e.raw_size);
+}
+}  // namespace
+
 bool read(const std::string& path, std::vector<unsigned char>* out) {
     const Pack* pk = nullptr;
-    if (const Entry* e = find_entry(path, &pk)) return read_file_range(pk->file, e->offset, e->size, false, out);
+    if (const Entry* e = find_entry(path, &pk)) return read_entry(*pk, *e, out);
     return read_file_range(path, 0, 0, true, out);
 }
 
 bool read_prefix(const std::string& path, size_t n, std::vector<unsigned char>* out) {
     const Pack* pk = nullptr;
-    if (const Entry* e = find_entry(path, &pk)) return read_file_range(pk->file, e->offset, std::min<std::uint64_t>(e->size, n), false, out);
+    if (const Entry* e = find_entry(path, &pk)) {
+        if (e->zlib) { if (!read_entry(*pk, *e, out)) return false; if (out->size() > n) out->resize(n); return true; }
+        return read_file_range(pk->file, e->offset, std::min<std::uint64_t>(e->size, n), false, out);
+    }
     FILE* f = std::fopen(path.c_str(), "rb");
     if (!f) return false;
     out->resize(n);

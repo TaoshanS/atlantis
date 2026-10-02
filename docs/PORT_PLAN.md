@@ -3,7 +3,7 @@
 Ver fases y validación en `AGENTS.md`. Aquí van los detalles de diseño a medida que se concreten.
 
 ## Arquitectura (borrador)
-- `tools/extract/`: extractor SWF -> paquete de datos (atlas + manifest + WAV + XML). Salida fuera de git.
+- `tools/extract/`: extractor SWF -> paquete de datos (bitmaps WebP + MP3 originales + manifest + XML). Salida fuera de git.
 - `engine/`: SDL3 + SDL_GPU, escenas, entrada unificada ratón/táctil, audio 48 kHz, texto.
 - `game/`: lógica pura serializable (sin dependencias de render), PRNG con semilla.
 - `ui/`: pantallas; layout reubicable para pantallas anchas.

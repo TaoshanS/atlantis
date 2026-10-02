@@ -99,16 +99,14 @@ def main():
     missing = [m for m in ("PIL", "numpy", "fontTools") if importlib.util.find_spec(m) is None]
     if missing:
         fail("missing python modules: %s -> pip install -r requirements.txt" % ", ".join(missing))
-    if not shutil.which("ffmpeg"):
-        print("WARNING: ffmpeg not found: the game will have no sound (install it and rebuild)")
     if a.check:
         return
 
-    ex = Path(a.extracted)
+    ex = Path(a.extracted).resolve()  # absolute: build_assets runs its steps from tools/extract
     run(ROOT / "tools/extract/build_assets.py", "--game", game, "--main-swf", main_swf, "--out", ex, "--if-stale")
     stamp = ex / ".extractor_hash"
     if a.pak:
-        pak = Path(a.pak)
+        pak = Path(a.pak).resolve()
         maps = game / "maps"
         if not pak.exists() or pak.stat().st_mtime < max(stamp.stat().st_mtime, newest([maps])):
             pak.parent.mkdir(parents=True, exist_ok=True)
@@ -116,7 +114,7 @@ def main():
         else:
             print("%s is up to date" % pak)
     if a.icons:
-        icons = Path(a.icons)
+        icons = Path(a.icons).resolve()
         if not (icons / "icon_macos_1024.png").exists() or (icons / "icon_macos_1024.png").stat().st_mtime < stamp.stat().st_mtime:
             run(ROOT / "tools/icon/make_icon.py", ex, icons)
 

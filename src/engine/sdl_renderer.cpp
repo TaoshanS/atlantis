@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "sdl_renderer.h"
+#include "image_io.h"
 #include "core/vfs.h"
 
 #include <SDL3/SDL.h>
@@ -161,16 +162,13 @@ const SdlRenderer::Tex* SdlRenderer::texture(const Library* lib, int id) {
     auto it = cache_.find(key);
     if (it != cache_.end()) return it->second.tex ? &it->second : nullptr;
     Tex t;
-    int w = 0, h = 0, comp = 0;
-    std::vector<unsigned char> file;
-    unsigned char* data = vfs::read(lib->image_file(images_root_, id), &file)
-                              ? stbi_load_from_memory(file.data(), static_cast<int>(file.size()), &w, &h, &comp, 4) : nullptr;
-    if (data) {
+    int w = 0, h = 0;
+    std::vector<unsigned char> rgba;
+    if (decode_image(lib->image_file(images_root_, id), &w, &h, &rgba)) {
         sbso::Image img;
         img.w = w;
         img.h = h;
-        img.rgba.assign(data, data + static_cast<size_t>(w) * h * 4);
-        stbi_image_free(data);
+        img.rgba = std::move(rgba);
         if (filter_ == sbso::Filter::Lanczos3 && asset_scale_ > 1.01f) {
             float k = std::min(1.0f, 8192.0f / (std::max(w, h) * asset_scale_));  // stay within the GPU texture size limit
             int ow = std::max(1, static_cast<int>(std::lround(w * asset_scale_ * k))), oh = std::max(1, static_cast<int>(std::lround(h * asset_scale_ * k)));

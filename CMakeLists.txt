@@ -16,7 +16,7 @@ include(GameData)
 set(SBSO_WARNINGS $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>)
 
 # ---- libraries: core, game logic, saves, engine, audio (no SDL) ----
-add_library(sbso_core src/core/resample.cpp src/core/layout.cpp src/core/vfs.cpp)
+add_library(sbso_core src/core/resample.cpp src/core/layout.cpp src/core/vfs.cpp src/core/stb_image_impl.cpp)
 target_include_directories(sbso_core PUBLIC src third_party)
 target_compile_options(sbso_core PRIVATE ${SBSO_WARNINGS})
 
@@ -32,16 +32,18 @@ add_library(sbso_save src/save/save_data.cpp src/save/store.cpp src/save/progres
 target_include_directories(sbso_save PUBLIC src third_party)
 target_compile_options(sbso_save PRIVATE ${SBSO_WARNINGS})
 
-add_library(sbso_engine src/engine/text.cpp src/engine/library.cpp src/engine/movieclip.cpp src/engine/soft_renderer.cpp src/engine/stb_impl.cpp src/engine/stb_write_impl.cpp)
+include(WebP)
+add_library(sbso_engine src/engine/image_io.cpp src/engine/text.cpp src/engine/library.cpp src/engine/movieclip.cpp src/engine/soft_renderer.cpp src/engine/stb_impl.cpp src/engine/stb_write_impl.cpp)
 target_include_directories(sbso_engine PUBLIC src third_party)
-target_link_libraries(sbso_engine PUBLIC sbso_core)
+target_link_libraries(sbso_engine PUBLIC sbso_core PRIVATE webpdecoder)
+target_include_directories(sbso_engine PRIVATE ${libwebp_SOURCE_DIR}/src)
 target_compile_options(sbso_engine PRIVATE ${SBSO_WARNINGS})
-set_source_files_properties(src/engine/stb_impl.cpp src/engine/stb_write_impl.cpp PROPERTIES COMPILE_OPTIONS "-w")
+set_source_files_properties(src/engine/stb_impl.cpp src/engine/stb_write_impl.cpp src/audio/codecs_impl.cpp src/core/stb_image_impl.cpp PROPERTIES COMPILE_OPTIONS "-w")
 
 add_library(sbso_levelview src/engine/level_view.cpp)
 target_link_libraries(sbso_levelview PUBLIC sbso_engine sbso_game)
 
-add_library(sbso_audio src/audio/mixer.cpp src/audio/sound_bank.cpp src/audio/sound_manager.cpp)
+add_library(sbso_audio src/audio/mixer.cpp src/audio/sound_bank.cpp src/audio/sound_manager.cpp src/audio/codecs_impl.cpp)
 target_include_directories(sbso_audio PUBLIC src third_party)
 target_link_libraries(sbso_audio PUBLIC sbso_core)
 target_compile_options(sbso_audio PRIVATE ${SBSO_WARNINGS})

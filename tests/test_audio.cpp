@@ -116,16 +116,28 @@ int main() {
         CHECK(!sm.music_playing("beep"));
         fs::remove_all(fs::path(TEST_TMP_DIR) / "audio_test2");
     }
+    // Resampler (the game's replica of the ffmpeg filter the extractor used): length rounds up, DC and a 1 kHz tone keep their level.
+    {
+        std::vector<float> dc(5760, 0.5f), sine(11025);
+        for (size_t i = 0; i < sine.size(); ++i) sine[i] = 0.8f * static_cast<float>(std::sin(2 * 3.14159265358979 * 1000 * i / 11025.0));
+        auto a = resample_to_output(dc, 11025), b = resample_to_output(sine, 11025);
+        CHECK(a.size() == 25078);  // ceil(5760 * 48000 / 11025)
+        CHECK(std::fabs(a[a.size() / 2] - 0.5f) < 1e-4f);
+        float peak = 0;
+        for (size_t i = 4800; i + 4800 < b.size(); ++i) peak = std::max(peak, std::fabs(b[i]));
+        CHECK(std::fabs(peak - 0.8f) < 0.01f);
+    }
     // The real library, when the extractor output exists.
     {
         const char* env = std::getenv("SBSO_EXTRACTED");
         std::string root = env ? env : EXTRACTED_DIR;
-        if (fs::exists(root + "/sounds_wav")) {
+        if (fs::exists(root + "/sounds/sound_library")) {
             SoundBank bank;
             int n = bank.load(root);
             std::printf("sound bank: %d sounds\n", n);
             CHECK(n >= 150);
-            CHECK(bank.get("button_play") != nullptr);
+            auto s = bank.get("button_play");  // decoded from the original MP3 and resampled to 48 kHz on first use
+            CHECK(s != nullptr && s->samples.size() > 1000);
         } else {
             std::printf("skipped sound bank (no extractor output)\n");
         }

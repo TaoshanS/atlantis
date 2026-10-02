@@ -12,21 +12,20 @@ The build has two halves:
 * [CMake 3.21+](https://cmake.org)
 * A C++17 compiler (Clang, GCC or MSVC)
 * [Python 3.8+](https://python.org) with `pip install -r requirements.txt` (Pillow, NumPy, fontTools)
-* [FFmpeg](https://ffmpeg.org) on `PATH` (converts the audio; without it the game is silent)
 * Internet access on the first configure if SDL3 is not installed
 
 ### macOS
 
 ```sh
 xcode-select --install          # command line tools (full Xcode only for iOS)
-brew install cmake python ffmpeg
+brew install cmake python
 pip3 install -r requirements.txt
 ```
 
 ### Linux (Ubuntu 24.04)
 
 ```sh
-sudo apt install build-essential cmake ninja-build python3-pip ffmpeg pkg-config \
+sudo apt install build-essential cmake ninja-build python3-pip pkg-config \
   libasound2-dev libpulse-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev \
   libxkbcommon-dev libwayland-dev wayland-protocols libegl1-mesa-dev libgl1-mesa-dev libdrm-dev libgbm-dev libudev-dev
 pip3 install -r requirements.txt
@@ -35,8 +34,8 @@ pip3 install -r requirements.txt
 
 ### Windows
 
-Visual Studio 2022 with *Desktop development with C++* (it includes CMake), Python 3 from python.org or the Microsoft Store, and FFmpeg
-on `PATH` (e.g. `winget install ffmpeg`). Windows support is new: report anything that does not work.
+Visual Studio 2022 with *Desktop development with C++* (it includes CMake), Python 3 from python.org or the Microsoft Store.
+Windows support is new: report anything that does not work.
 
 ## Configure and build
 
@@ -91,6 +90,6 @@ game/               your game files (git-ignored, except its README)
 platforms/          per-OS packaging: Info.plist templates, launch screen, .desktop entry, Windows resources
 src/                the port: core, game logic, saves, engine, audio, i18n, app
 tests/              unit and smoke tests
-third_party/        pugixml, stb, nlohmann/json (vendored)
+third_party/        pugixml, stb, nlohmann/json, minimp3 (vendored); libwebp and SDL3 are downloaded by CMake
 tools/              extractor, pack and icon tools, the SWF dumper, screenshot helpers
 ```

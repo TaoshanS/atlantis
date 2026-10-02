@@ -202,3 +202,15 @@ diga) y por dónde empezar. Marcar `[x]` al corregir. Hay más bugs por descubri
   y retoma la batalla si la había (`flow::after_slot_loaded`). Desactivado si no hay partidas.
 - [x] **59. CLOSE más grandes en móvil**: `MovieClip::enlarge_named` (dibujo y toque, alrededor del centro) a 1,6x en instrucciones, opciones, perfiles,
   tutorial y el CLOSE del cuadro de diálogo.
+
+## Decimoquinta tanda
+- [x] **60. App/.ipa de 170 MB (el juego original son 27 MB)**: el audio se guardaba en WAV de 48 kHz (114 MB). Ahora el extractor escribe FLAC sin pérdida
+  con el mismo remuestreo (35 MB; comprobado bit a bit contra los WAV) y el paquete ya no lleva los MP3. `game.pak` 173 -> 85 MB, app 87 MB, `.ipa` 80 MB.
+  Las imágenes (55 MB en PNG) podrían bajar más guardando como JPEG las que lo eran en el original.
+- Arreglado de paso: las rutas relativas de `game_data.py` acababan en `tools/extract/`; la app de macOS y el `.ipa` no recogían un `game.pak` nuevo.
+- [x] **61. Tamaño mínimo**: `game.pak` 85 -> 25 MB (el juego original son 27 MB); app de macOS 30 MB, `.ipa` 30 MB.
+  - Audio: los MP3 originales (5 MB) en vez de PCM a 48 kHz. El juego los descodifica (minimp3, salida float) y remuestrea con una réplica de
+    libswresample 8.1 (64 coeficientes, Kaiser 9, fases exactas, suma float par/impar, reflejo final). Prueba de cancelación contra los WAV/FLAC de
+    ffmpeg en los 182 sonidos: pico del residuo -90,3 dBFS (1 LSB de 16 bits), media -101,6 dB, mismas longitudes. Carga diferida: 85 ms una pista de 1 min.
+  - Imágenes: WebP sin pérdida exacto (píxeles idénticos), libwebp como dependencia de CMake. Paquete v2 (`SBSOPAK2`): duplicados una sola vez
+    (1.513 bitmaps repetidos entre SWF) y JSON/XML con zlib. ffmpeg ya no hace falta para extraer.

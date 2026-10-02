@@ -13,6 +13,8 @@ cd "$(dirname "$0")/.."
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 BUILD=build/ios
 cmake --preset ios -DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM="$TEAM" ${SBSO_BUNDLE_ID:+-DSBSO_BUNDLE_ID=$SBSO_BUNDLE_ID}
+# the game data first: Xcode plans which resources to copy before building, so a game.pak rewritten mid-build would be left out
+cmake --build "$BUILD" --target game_data --config Release
 xcodebuild -project "$BUILD/sbso.xcodeproj" -scheme sbso -configuration Release -destination 'generic/platform=iOS' \
     -allowProvisioningUpdates DEVELOPMENT_TEAM="$TEAM" build | grep -E "error:|BUILD|warning: .*/src/" || true
 APP="$BUILD/Release-iphoneos/AtlantisSquareOff.app"

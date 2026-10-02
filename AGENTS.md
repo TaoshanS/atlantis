@@ -53,7 +53,7 @@ Preservar y revivir **SpongeBob Atlantis SquareOff** (juego Flash AS3 de 2008, W
 - Nube: **al final del proyecto**. Backend neutral autoalojado, componente reutilizable C99 con ABI C estable (usable desde C++/Swift/Kotlin/Rust); modelo game_id/perfil/ranura/blob + revisión; protocolo HTTP clave-valor con ETag/If-Match (compatible WebDAV); cifrado en cliente; política de conflictos aportada por el juego. Abierto: nº de ranuras, auth, librería HTTP por plataforma.
 
 ## Plan por fases
-1. Extractor de assets (offline): bitmaps->atlas, MovieClips->hojas de sprites + listas de frames, máscaras, sonidos->WAV 48 kHz, XML/strings; produce manifest + paquete de datos. El juego nunca lee SWF.
+1. Extractor de assets (offline): bitmaps->atlas, MovieClips->hojas de sprites + listas de frames, máscaras, sonidos (MP3 originales; remuestreo a 48 kHz en el juego), XML/strings; produce manifest + paquete de datos. El juego nunca lee SWF.
 2. Motor SDL3: mundo lógico 640x480, remuestreo, escena extendida, UI nativa, audio, entrada ratón/táctil, escenas.
 3. Lógica de juego como datos puros + PRNG con semilla (Map, Unit, AIUnit, TurnManager, BattleManager, cartas, cinturones).
 4. Pantallas y minijuegos.
@@ -74,7 +74,9 @@ C++17, CMake + Ninja, código que imita el estilo del entorno; sin identificador
 
 ## Estado actual (actualizar al terminar cada sesión)
 Fase 1 (extractor) y gran parte de las fases 2-3 están hechas y probadas:
-- `tools/extract/`: SWF -> PNG, MP3->WAV 48 kHz (`audio.py`), fuentes TTF (`fonts.py`), formas/sprites/botones/textos,
+- `tools/extract/`: SWF -> bitmaps en WebP sin pérdida (`webp.py`; el juego los lee con libwebp, `src/engine/image_io.*`), los MP3 originales tal cual
+  (el juego los descodifica con minimp3 y los remuestrea a 48 kHz con una réplica exacta del filtro swr de ffmpeg: ±1 LSB frente a los WAV de antes),
+  fuentes TTF (`fonts.py`), formas/sprites/botones/textos,
   scripts de fotograma (`framescripts.py` + `avm2.py`, los 612 recuperados) y cabecera (tamaño de escena, fps).
   `python3 tools/extract/extract.py "<juego>" extracted` (necesita `pip install pillow numpy fonttools`).
 - `src/core`: RNG PCG32, remuestreo Lanczos, layout de pantalla extendida (tests: `test_core`).
@@ -102,7 +104,7 @@ Fase 1 (extractor) y gran parte de las fases 2-3 están hechas y probadas:
 ### Retomar en local (léelo primero)
 - La rama de trabajo es `main` (el trabajo de las sesiones en la nube ya está fusionado). No hay PR abierto.
 - Puesta en marcha: `cmake --preset macos && cmake --build --preset macos && ctest --preset macos` (o `tools/setup_local.sh`, sin preset).
-  El build extrae los assets solo. Requisitos: cmake, compilador C++17, python3 + `requirements.txt`, ffmpeg. En el Mac del usuario
+  El build extrae los assets solo. Requisitos: cmake, compilador C++17, python3 + `requirements.txt` (ffmpeg ya no hace falta). En el Mac del usuario
   **no hay Ninja ni Xcode completo** (presets con Makefiles; iOS sin compilar) y el disco va muy justo (~2 GB libres).
 - Los originales (`SpongeBob Atlantis SquareOff - WildGames/`, `recovered/`) siguen siendo de solo lectura.
 - Las capturas de verificación se hacen sin pantalla: `./build/sbso --extracted extracted --maps "<juego>/maps" --saves /tmp/s --headless TICKS --shot f.png`

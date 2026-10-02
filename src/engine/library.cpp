@@ -1,4 +1,5 @@
 #include "library.h"
+#include "image_io.h"
 #include "core/vfs.h"
 
 #include <fstream>
@@ -122,26 +123,14 @@ std::string Library::image_file(const std::string& images_root, int id) const {
     std::string stem = name_.substr(slash == std::string::npos ? 0 : slash + 1);
     if (stem.size() > 5 && stem.compare(stem.size() - 5, 5, ".json") == 0) stem.resize(stem.size() - 5);
     for (size_t p; (p = stem.find("__")) != std::string::npos;) stem.replace(p, 2, "/");
-    return images_root + "/" + stem + "/" + std::to_string(id) + ".png";
+    return image_path(images_root + "/" + stem + "/" + std::to_string(id));
 }
-
-namespace {
-// PNG dimensions from the IHDR chunk, read through the VFS (the files may live in a pack).
-bool png_size(const std::string& path, int* w, int* h) {
-    std::vector<unsigned char> d;
-    if (!vfs::read_prefix(path, 24, &d) || d.size() < 24 || d[0] != 0x89 || d[1] != 'P') return false;
-    auto be = [&](int o) { return static_cast<int>(d[o] << 24 | d[o + 1] << 16 | d[o + 2] << 8 | d[o + 3]); };
-    *w = be(16);
-    *h = be(20);
-    return true;
-}
-}  // namespace
 
 bool Library::image_size(int id, int* w, int* h) const {
     auto it = image_sizes_.find(id);
     if (it == image_sizes_.end()) {
         int iw = 0, ih = 0;
-        if (!png_size(images_dir_ + "/" + std::to_string(id) + ".png", &iw, &ih)) iw = ih = 0;
+        if (!image_dims(image_path(images_dir_ + "/" + std::to_string(id)), &iw, &ih)) iw = ih = 0;
         it = image_sizes_.emplace(id, std::make_pair(iw, ih)).first;
     }
     if (it->second.first <= 0) return false;
@@ -171,8 +160,7 @@ bool Library::load(const std::string& path, const std::string& images_dir, std::
         auto it = image_sizes_.find(id);
         if (it != image_sizes_.end()) return it->second;
         int w = 0, h = 0;
-        std::string p = images_dir + "/" + std::to_string(id) + ".png";
-        if (!png_size(p, &w, &h)) w = h = 0;
+        if (!image_dims(image_path(images_dir + "/" + std::to_string(id)), &w, &h)) w = h = 0;
         image_sizes_[id] = {w, h};
         return {w, h};
     };
