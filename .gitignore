@@ -1,0 +1,24 @@
+# ---- Nickelodeon's property: never commit or redistribute ----
+# Your copy of the game (see game/README.md) and anything derived from it
+/game/*
+!/game/README.md
+/SpongeBob Atlantis SquareOff - WildGames/
+/recovered/
+extracted/
+extracted_main/
+*.pak
+*.swf
+*.sol
+
+# ---- build output and local runs ----
+build/
+build-*/
+dist/
+saves/
+*.sol.imported
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+.vscode/
+.idea/

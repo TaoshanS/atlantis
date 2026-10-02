@@ -1,0 +1,78 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "macos",
+      "displayName": "macOS app (this Mac's architecture)",
+      "inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" },
+      "cacheVariables": { "SBSO_STATIC_SDL3": "ON", "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0" }
+    },
+    {
+      "name": "macos-universal",
+      "displayName": "macOS app (Apple silicon + Intel)",
+      "inherits": "macos",
+      "cacheVariables": { "CMAKE_OSX_ARCHITECTURES": "arm64;x86_64" }
+    },
+    {
+      "name": "ios",
+      "displayName": "iOS / iPadOS (Xcode project)",
+      "inherits": "base",
+      "generator": "Xcode",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" },
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "iOS",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH": "NO"
+      }
+    },
+    {
+      "name": "ios-simulator",
+      "displayName": "iOS Simulator (Xcode project)",
+      "inherits": "ios",
+      "cacheVariables": { "CMAKE_OSX_SYSROOT": "iphonesimulator", "CMAKE_OSX_ARCHITECTURES": "arm64;x86_64" }
+    },
+    {
+      "name": "linux",
+      "displayName": "Linux",
+      "inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+    },
+    {
+      "name": "windows",
+      "displayName": "Windows (Visual Studio)",
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "code-only",
+      "displayName": "Code only (no game files; CI)",
+      "inherits": "base",
+      "cacheVariables": { "SBSO_BUILD_GAME_DATA": "OFF" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "macos", "configurePreset": "macos" },
+    { "name": "macos-universal", "configurePreset": "macos-universal" },
+    { "name": "ios", "configurePreset": "ios", "configuration": "Release" },
+    { "name": "ios-simulator", "configurePreset": "ios-simulator", "configuration": "Debug" },
+    { "name": "linux", "configurePreset": "linux" },
+    { "name": "windows", "configurePreset": "windows", "configuration": "Release" },
+    { "name": "code-only", "configurePreset": "code-only" }
+  ],
+  "testPresets": [
+    { "name": "macos", "configurePreset": "macos" },
+    { "name": "linux", "configurePreset": "linux" },
+    { "name": "windows", "configurePreset": "windows", "configuration": "Release" },
+    { "name": "code-only", "configurePreset": "code-only" }
+  ]
+}

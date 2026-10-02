@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Atlantis SquareOff
+GenericName=Turn-based battle game
+Comment=Native port of SpongeBob SquarePants: Atlantis SquareOff (needs your own copy of the game)
+Comment[es]=Port nativo de Bob Esponja: Atlantis SquareOff (necesita tu propia copia del juego)
+Exec=sbso
+Icon=io.github.sbso.atlantis
+Terminal=false
+Categories=Game;StrategyGame;

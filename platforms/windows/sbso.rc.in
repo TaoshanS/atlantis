@@ -1,0 +1,2 @@
+// Icon made from your game files at build time (target game_data).
+IDI_ICON1 ICON "@SBSO_ICON_DIR@/icon.ico"

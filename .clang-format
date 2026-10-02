@@ -1,0 +1,12 @@
+# Matches the existing code: 4-space indent, long lines, attached braces, short ifs/loops/functions on one line.
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 150
+AccessModifierOffset: -4
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortBlocksOnASingleLine: Always
+DerivePointerAlignment: false
+PointerAlignment: Left
+SortIncludes: false

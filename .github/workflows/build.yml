@@ -1,0 +1,51 @@
+# CI builds the code only: the game data is never available here (it comes from each user's own copy of the game).
+# Tests that need the game files skip themselves.
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies (SDL3 is built from source)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build pkg-config \
+            libasound2-dev libpulse-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev \
+            libxkbcommon-dev libwayland-dev wayland-protocols libegl1-mesa-dev libgl1-mesa-dev libdrm-dev libgbm-dev libudev-dev
+      - run: cmake --preset code-only -G Ninja
+      - run: cmake --build --preset code-only
+      - run: ctest --preset code-only --output-on-failure
+
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake --preset code-only -DSBSO_STATIC_SDL3=ON
+      - run: cmake --build --preset code-only -j 4
+      - run: ctest --preset code-only --output-on-failure
+
+  windows:
+    runs-on: windows-2022
+    continue-on-error: true  # not verified on Windows yet
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake --preset code-only -G "Visual Studio 17 2022"
+      - run: cmake --build --preset code-only --config Release
+      - run: ctest --preset code-only -C Release --output-on-failure
+
+  dumper:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-i686
+      - name: Build sbso_dump.exe (32-bit, runs on Windows XP and later / Wine)
+        run: i686-w64-mingw32-gcc -O2 -s -Wall -Wextra -o sbso_dump.exe tools/dump/sbso_dump.c
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbso_dump
+          path: sbso_dump.exe
